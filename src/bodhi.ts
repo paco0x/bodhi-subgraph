@@ -1,126 +1,83 @@
+import { Address, BigInt, store } from "@graphprotocol/graph-ts";
 import {
-  ApprovalForAll as ApprovalForAllEvent,
   Create as CreateEvent,
   Remove as RemoveEvent,
   Trade as TradeEvent,
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
-  URI as URIEvent
-} from "../generated/Bodhi/Bodhi"
+} from "../generated/Bodhi/Bodhi";
+import { Asset } from "../generated/schema";
+import { ADDRESS_ZERO, BD_ONE, BI_ZERO } from "./number";
 import {
-  ApprovalForAll,
-  Create,
-  Remove,
-  Trade,
-  TransferBatch,
-  TransferSingle,
-  URI
-} from "../generated/schema"
-
-export function handleApprovalForAll(event: ApprovalForAllEvent): void {
-  let entity = new ApprovalForAll(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.owner = event.params.owner
-  entity.operator = event.params.operator
-  entity.approved = event.params.approved
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
-}
+  newCreate,
+  newRemove,
+  newTrade,
+  newTransferBatch,
+  newTransferSingle,
+  getOrCreateAsset,
+  getOrCreateUser,
+  getOrCreateUserAsset,
+} from "./store";
 
 export function handleCreate(event: CreateEvent): void {
-  let entity = new Create(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.assetId = event.params.assetId
-  entity.sender = event.params.sender
-  entity.arTxId = event.params.arTxId
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  newCreate(event);
+  getOrCreateUser(event.params.sender);
+  const asset = getOrCreateAsset(event.params.assetId.toString());
+  asset.creator = event.params.sender.toHexString();
+  asset.arTxId = event.params.arTxId;
+  asset.save();
 }
 
 export function handleRemove(event: RemoveEvent): void {
-  let entity = new Remove(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.assetId = event.params.assetId
-  entity.sender = event.params.sender
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  newRemove(event);
 }
 
 export function handleTrade(event: TradeEvent): void {
-  let entity = new Trade(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.tradeType = event.params.tradeType
-  entity.assetId = event.params.assetId
-  entity.sender = event.params.sender
-  entity.tokenAmount = event.params.tokenAmount
-  entity.ethAmount = event.params.ethAmount
-  entity.creatorFee = event.params.creatorFee
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  newTrade(event);
 }
 
 export function handleTransferBatch(event: TransferBatchEvent): void {
-  let entity = new TransferBatch(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.operator = event.params.operator
-  entity.from = event.params.from
-  entity.to = event.params.to
-  entity.ids = event.params.ids
-  entity.amounts = event.params.amounts
+  newTransferBatch(event);
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  for (let i = 0; i < event.params.ids.length; i++) {
+    const id = event.params.ids[i].toString();
+    const amount = event.params.amounts[i];
+    handleTransfer(id, event.params.from, event.params.to, amount);
+  }
 }
 
 export function handleTransferSingle(event: TransferSingleEvent): void {
-  let entity = new TransferSingle(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.operator = event.params.operator
-  entity.from = event.params.from
-  entity.to = event.params.to
-  entity.Bodhi_id = event.params.id
-  entity.amount = event.params.amount
-
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  newTransferSingle(event);
+  handleTransfer(
+    event.params.id.toString(),
+    event.params.from,
+    event.params.to,
+    event.params.amount
+  );
 }
 
-export function handleURI(event: URIEvent): void {
-  let entity = new URI(event.transaction.hash.concatI32(event.logIndex.toI32()))
-  entity.value = event.params.value
-  entity.Bodhi_id = event.params.id
+function handleTransfer(
+  id: string,
+  from: Address,
+  to: Address,
+  amount: BigInt
+): void {
+  const asset = getOrCreateAsset(id);
+  if (from.toHexString() != ADDRESS_ZERO) {
+    const user = getOrCreateUser(from);
+    const userAsset = getOrCreateUserAsset(user, asset);
+    userAsset.amount = userAsset.amount.minus(amount);
+    if (userAsset.amount.equals(BI_ZERO)) {
+      store.remove("UserAsset", userAsset.id);
+    } else {
+      userAsset.save();
+    }
+  }
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
-
-  entity.save()
+  if (to.toHexString() != ADDRESS_ZERO) {
+    const user = getOrCreateUser(to);
+    const userAsset = getOrCreateUserAsset(user, asset);
+    userAsset.amount = userAsset.amount.plus(amount);
+    userAsset.save();
+  }
 }

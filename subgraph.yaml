@@ -25,8 +25,6 @@ dataSources:
         - name: Bodhi
           file: ./abis/Bodhi.json
       eventHandlers:
-        - event: ApprovalForAll(indexed address,indexed address,bool)
-          handler: handleApprovalForAll
         - event: Create(indexed uint256,indexed address,string)
           handler: handleCreate
         - event: Remove(indexed uint256,indexed address)
@@ -37,6 +35,4 @@ dataSources:
           handler: handleTransferBatch
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
-        - event: URI(string,indexed uint256)
-          handler: handleURI
       file: ./src/bodhi.ts
