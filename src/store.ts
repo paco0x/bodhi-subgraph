@@ -112,6 +112,7 @@ export function getOrCreateUser(addr: Address): User {
   let user = User.load(id);
   if (user == null) {
     user = new User(id);
+    user.address = addr;
     user.save();
   }
   return user;
