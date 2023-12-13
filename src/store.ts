@@ -99,8 +99,8 @@ export function newTransferSingle(event: TransferSingleEvent): void {
 }
 
 export function getOrCreateAsset(id: string): Asset {
-  let asset = Asset.load(id) as Asset;
-  if (id == null) {
+  let asset = Asset.load(id);
+  if (asset == null) {
     asset = new Asset(id);
     asset.creator = null;
     asset.arTxId = null;
