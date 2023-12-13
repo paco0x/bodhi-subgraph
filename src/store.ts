@@ -102,6 +102,8 @@ export function getOrCreateAsset(id: string): Asset {
   let asset = Asset.load(id) as Asset;
   if (id == null) {
     asset = new Asset(id);
+    asset.creator = null;
+    asset.arTxId = null;
     asset.save();
   }
   return asset;
