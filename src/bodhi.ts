@@ -6,8 +6,7 @@ import {
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
-import { Asset } from "../generated/schema";
-import { ADDRESS_ZERO, BD_ONE, BI_ZERO } from "./number";
+import { ADDRESS_ZERO, BI_ZERO } from "./number";
 import {
   newCreate,
   newRemove,
