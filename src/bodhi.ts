@@ -11,11 +11,12 @@ import {
   newCreate,
   newRemove,
   newTrade,
-  newTransferBatch,
-  newTransferSingle,
+  // newTransfer,
   getOrCreateAsset,
   getOrCreateUser,
   getOrCreateUserAsset,
+  newTransferFromSingle,
+  newTransferFromBatch,
 } from "./store";
 
 export function handleCreate(event: CreateEvent): void {
@@ -52,23 +53,22 @@ export function handleTrade(event: TradeEvent): void {
 }
 
 export function handleTransferBatch(event: TransferBatchEvent): void {
-  newTransferBatch(event);
-
   for (let i = 0; i < event.params.ids.length; i++) {
     const id = event.params.ids[i].toString();
     const amount = event.params.amounts[i];
     handleTransfer(id, event.params.from, event.params.to, amount);
+    newTransferFromBatch(event, i);
   }
 }
 
 export function handleTransferSingle(event: TransferSingleEvent): void {
-  newTransferSingle(event);
   handleTransfer(
     event.params.id.toString(),
     event.params.from,
     event.params.to,
     event.params.amount
   );
+  newTransferFromSingle(event);
 }
 
 function handleTransfer(

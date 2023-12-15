@@ -31,19 +31,7 @@ type Trade @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type TransferBatch @entity(immutable: true) {
-  id: Bytes!
-  operator: Bytes! # address
-  from: Bytes! # address
-  to: Bytes! # address
-  ids: [BigInt!]! # uint256[]
-  amounts: [BigInt!]! # uint256[]
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type TransferSingle @entity(immutable: true) {
+type Transfer @entity(immutable: true) {
   id: Bytes!
   operator: Bytes! # address
   from: Bytes! # address

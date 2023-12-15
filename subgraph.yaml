@@ -14,13 +14,11 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - ApprovalForAll
         - Create
-        - Remove
-        - Trade
-        - TransferBatch
-        - TransferSingle
-        - URI
+        # - Remove
+        # - Trade
+        # - TransferBatch
+        # - TransferSingle
       abis:
         - name: Bodhi
           file: ./abis/Bodhi.json
