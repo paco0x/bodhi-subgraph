@@ -6,7 +6,7 @@ import {
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
-import { ADDRESS_ZERO, BI_ZERO } from "./number";
+import { ADDRESS_ZERO, BI_ONE, BI_WAD, BI_ZERO } from "./number";
 import {
   newCreate,
   newRemove,
@@ -24,6 +24,7 @@ export function handleCreate(event: CreateEvent): void {
   const asset = getOrCreateAsset(event.params.assetId.toString());
   asset.creator = event.params.sender.toHexString();
   asset.arTxId = event.params.arTxId;
+  asset.totalSupply = BI_WAD;
   asset.save();
 }
 
@@ -33,6 +34,21 @@ export function handleRemove(event: RemoveEvent): void {
 
 export function handleTrade(event: TradeEvent): void {
   newTrade(event);
+  const asset = getOrCreateAsset(event.params.assetId.toString());
+  if (event.params.tradeType == 0) {
+    asset.totalSupply = event.params.tokenAmount;
+  } else if (event.params.tradeType == 1) {
+    asset.totalSupply = asset.totalSupply.plus(event.params.tokenAmount);
+    asset.totalTrades = asset.totalTrades.plus(BI_ONE);
+    asset.totalFees = asset.totalFees.plus(event.params.creatorFee);
+    asset.totalVolume = asset.totalVolume.plus(event.params.ethAmount);
+  } else {
+    asset.totalSupply = asset.totalSupply.minus(event.params.tokenAmount);
+    asset.totalTrades = asset.totalTrades.plus(BI_ONE);
+    asset.totalFees = asset.totalFees.plus(event.params.creatorFee);
+    asset.totalVolume = asset.totalVolume.plus(event.params.ethAmount);
+  }
+  asset.save();
 }
 
 export function handleTransferBatch(event: TransferBatchEvent): void {
@@ -63,10 +79,7 @@ function handleTransfer(
 ): void {
   const asset = getOrCreateAsset(id);
 
-  if (from.toHexString() == ADDRESS_ZERO) {
-    asset.totalSupply = asset.totalSupply.plus(amount);
-    asset.save();
-  } else {
+  if (from.toHexString() !== ADDRESS_ZERO) {
     const fromUser = getOrCreateUser(from);
     const userAsset = getOrCreateUserAsset(fromUser, asset);
     userAsset.amount = userAsset.amount.minus(amount);
@@ -77,10 +90,7 @@ function handleTransfer(
     }
   }
 
-  if (to.toHexString() === ADDRESS_ZERO) {
-    asset.totalSupply = asset.totalSupply.minus(amount);
-    asset.save();
-  } else {
+  if (to.toHexString() !== ADDRESS_ZERO) {
     const toUser = getOrCreateUser(to);
     const userAsset = getOrCreateUserAsset(toUser, asset);
     userAsset.amount = userAsset.amount.plus(amount);

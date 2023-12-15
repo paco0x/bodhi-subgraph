@@ -106,6 +106,9 @@ export function getOrCreateAsset(id: string): Asset {
     asset.creator = null;
     asset.arTxId = null;
     asset.totalSupply = BI_ZERO;
+    asset.totalTrades = BI_ZERO;
+    asset.totalFees = BI_ZERO;
+    asset.totalVolume = BI_ZERO;
     asset.save();
   }
   return asset;
