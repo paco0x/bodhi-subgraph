@@ -62,9 +62,13 @@ function handleTransfer(
   amount: BigInt
 ): void {
   const asset = getOrCreateAsset(id);
-  if (from.toHexString() != ADDRESS_ZERO) {
-    const user = getOrCreateUser(from);
-    const userAsset = getOrCreateUserAsset(user, asset);
+
+  if (from.toHexString() == ADDRESS_ZERO) {
+    asset.totalSupply = asset.totalSupply.plus(amount);
+    asset.save();
+  } else {
+    const fromUser = getOrCreateUser(from);
+    const userAsset = getOrCreateUserAsset(fromUser, asset);
     userAsset.amount = userAsset.amount.minus(amount);
     if (userAsset.amount.equals(BI_ZERO)) {
       store.remove("UserAsset", userAsset.id);
@@ -73,9 +77,12 @@ function handleTransfer(
     }
   }
 
-  if (to.toHexString() != ADDRESS_ZERO) {
-    const user = getOrCreateUser(to);
-    const userAsset = getOrCreateUserAsset(user, asset);
+  if (to.toHexString() === ADDRESS_ZERO) {
+    asset.totalSupply = asset.totalSupply.minus(amount);
+    asset.save();
+  } else {
+    const toUser = getOrCreateUser(to);
+    const userAsset = getOrCreateUserAsset(toUser, asset);
     userAsset.amount = userAsset.amount.plus(amount);
     userAsset.save();
   }

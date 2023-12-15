@@ -72,5 +72,6 @@ type Asset @entity {
   id: ID!
   arTxId: String
   creator: User
+  totalSupply: BigInt!
   holders: [UserAsset!]! @derivedFrom(field: "asset")
 }
