@@ -67,8 +67,8 @@ export function newTrade(event: TradeEvent): void {
 export function newTransferFromSingle(event: TransferSingleEvent): void {
   // skip mint & burn
   if (
-    event.params.from.toHexString() !== ADDRESS_ZERO &&
-    event.params.to.toHexString() !== ADDRESS_ZERO
+    event.params.from.toHexString() === ADDRESS_ZERO &&
+    event.params.to.toHexString() === ADDRESS_ZERO
   ) {
     return;
   }
@@ -95,8 +95,8 @@ export function newTransferFromBatch(
 ): void {
   // skip mint & burn
   if (
-    event.params.from.toHexString() !== ADDRESS_ZERO &&
-    event.params.to.toHexString() !== ADDRESS_ZERO
+    event.params.from.toHexString() === ADDRESS_ZERO &&
+    event.params.to.toHexString() === ADDRESS_ZERO
   ) {
     return;
   }
