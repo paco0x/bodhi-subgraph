@@ -16,7 +16,7 @@ import {
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
 import { Address, BigInt } from "@graphprotocol/graph-ts";
-import { BI_ZERO } from "./number";
+import { BD_ZERO, BI_ZERO } from "./number";
 
 export function newCreate(event: CreateEvent): void {
   let create = new Create(
@@ -107,8 +107,8 @@ export function getOrCreateAsset(id: string): Asset {
     asset.arTxId = null;
     asset.totalSupply = BI_ZERO;
     asset.totalTrades = BI_ZERO;
-    asset.totalFees = BI_ZERO;
-    asset.totalVolume = BI_ZERO;
+    asset.totalFees = BD_ZERO;
+    asset.totalVolume = BD_ZERO;
     asset.save();
   }
   return asset;

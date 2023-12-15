@@ -6,7 +6,7 @@ import {
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
-import { ADDRESS_ZERO, BI_ONE, BI_WAD, BI_ZERO } from "./number";
+import { ADDRESS_ZERO, BI_ONE, BI_WAD, BI_ZERO, fromWei } from "./number";
 import {
   newCreate,
   newRemove,
@@ -40,13 +40,13 @@ export function handleTrade(event: TradeEvent): void {
   } else if (event.params.tradeType == 1) {
     asset.totalSupply = asset.totalSupply.plus(event.params.tokenAmount);
     asset.totalTrades = asset.totalTrades.plus(BI_ONE);
-    asset.totalFees = asset.totalFees.plus(event.params.creatorFee);
-    asset.totalVolume = asset.totalVolume.plus(event.params.ethAmount);
+    asset.totalFees = asset.totalFees.plus(fromWei(event.params.creatorFee));
+    asset.totalVolume = asset.totalVolume.plus(fromWei(event.params.ethAmount));
   } else {
     asset.totalSupply = asset.totalSupply.minus(event.params.tokenAmount);
     asset.totalTrades = asset.totalTrades.plus(BI_ONE);
-    asset.totalFees = asset.totalFees.plus(event.params.creatorFee);
-    asset.totalVolume = asset.totalVolume.plus(event.params.ethAmount);
+    asset.totalFees = asset.totalFees.plus(fromWei(event.params.creatorFee));
+    asset.totalVolume = asset.totalVolume.plus(fromWei(event.params.ethAmount));
   }
   asset.save();
 }
