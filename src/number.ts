@@ -5,6 +5,7 @@ export const BI_ONE = BigInt.fromI32(1);
 export const BI_WAD = BigInt.fromI32(10).pow(18);
 
 export const BD_ZERO = BigDecimal.fromString("0");
+export const BD_WAD = BigDecimal.fromString(BI_WAD.toString());
 
 export const DEFAULT_DECIMALS = BigInt.fromI32(18);
 export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";

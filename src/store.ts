@@ -50,7 +50,7 @@ export function newRemove(event: RemoveEvent): void {
   entity.save();
 }
 
-export function newTrade(event: TradeEvent): void {
+export function newTrade(event: TradeEvent, user: User): void {
   let entity = new Trade(
     event.transaction.hash
       .concat(Bytes.fromUTF8("-"))
@@ -58,7 +58,7 @@ export function newTrade(event: TradeEvent): void {
   );
   entity.tradeType = event.params.tradeType;
   entity.assetId = event.params.assetId;
-  entity.sender = event.params.sender;
+  entity.user = user.id;
   entity.tokenAmount = event.params.tokenAmount;
   entity.ethAmount = event.params.ethAmount;
   entity.creatorFee = event.params.creatorFee;
@@ -73,8 +73,8 @@ export function newTrade(event: TradeEvent): void {
 export function newTransferFromSingle(event: TransferSingleEvent): void {
   // skip mint & burn
   if (
-    event.params.from.toHexString() === ADDRESS_ZERO &&
-    event.params.to.toHexString() === ADDRESS_ZERO
+    event.params.from.toHexString() != ADDRESS_ZERO &&
+    event.params.to.toHexString() != ADDRESS_ZERO
   ) {
     return;
   }
@@ -104,8 +104,8 @@ export function newTransferFromBatch(
 ): void {
   // skip mint & burn
   if (
-    event.params.from.toHexString() === ADDRESS_ZERO &&
-    event.params.to.toHexString() === ADDRESS_ZERO
+    event.params.from.toHexString() != ADDRESS_ZERO &&
+    event.params.to.toHexString() != ADDRESS_ZERO
   ) {
     return;
   }
@@ -129,14 +129,14 @@ export function newTransferFromBatch(
   entity.save();
 }
 
-export function getOrCreateAsset(id: string): Asset {
-  let asset = Asset.load(id);
+export function getOrCreateAsset(id: BigInt): Asset {
+  let asset = Asset.load(id.toString());
   if (asset == null) {
-    asset = new Asset(id);
-    asset.assetId = BI_ZERO;
+    asset = new Asset(id.toString());
+    asset.assetId = id;
     asset.arTxId = null;
     asset.creator = null;
-    asset.totalSupply = BI_ZERO;
+    asset.totalSupply = BD_ZERO;
     asset.totalTrades = BI_ZERO;
     asset.totalFees = BD_ZERO;
     asset.totalVolume = BD_ZERO;
@@ -151,6 +151,8 @@ export function getOrCreateUser(addr: Address): User {
   if (user == null) {
     user = new User(id);
     user.address = addr;
+    user.creatorProfit = BD_ZERO;
+    user.tradingPnl = BD_ZERO;
     user.save();
   }
   return user;
@@ -164,7 +166,8 @@ export function getOrCreateUserAsset(user: User, asset: Asset): UserAsset {
     userAsset.assetId = asset.assetId;
     userAsset.user = user.id;
     userAsset.asset = asset.id;
-    userAsset.amount = BigInt.fromI32(0);
+    userAsset.amount = BD_ZERO;
+    userAsset.avgPrice = BD_ZERO;
     userAsset.save();
   }
   return userAsset;

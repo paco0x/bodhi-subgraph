@@ -6,7 +6,15 @@ import {
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
-import { ADDRESS_ZERO, BI_ONE, BI_WAD, BI_ZERO, fromWei } from "./number";
+import {
+  ADDRESS_ZERO,
+  BD_WAD,
+  BD_ZERO,
+  BI_ONE,
+  BI_WAD,
+  BI_ZERO,
+  fromWei,
+} from "./number";
 import {
   newCreate,
   newRemove,
@@ -21,11 +29,11 @@ import {
 export function handleCreate(event: CreateEvent): void {
   newCreate(event);
   getOrCreateUser(event.params.sender);
-  const asset = getOrCreateAsset(event.params.assetId.toString());
+  const asset = getOrCreateAsset(event.params.assetId);
   asset.assetId = event.params.assetId;
   asset.arTxId = event.params.arTxId;
   asset.creator = event.params.sender.toHexString();
-  asset.totalSupply = BI_WAD;
+  asset.totalSupply = BD_WAD;
   asset.save();
 }
 
@@ -34,27 +42,61 @@ export function handleRemove(event: RemoveEvent): void {
 }
 
 export function handleTrade(event: TradeEvent): void {
-  newTrade(event);
-  const asset = getOrCreateAsset(event.params.assetId.toString());
+  const trader = getOrCreateUser(event.params.sender);
+  newTrade(event, trader);
+
+  const deltaAmount = fromWei(event.params.tokenAmount);
+
+  const asset = getOrCreateAsset(event.params.assetId);
   if (event.params.tradeType == 0) {
-    asset.totalSupply = event.params.tokenAmount;
-  } else if (event.params.tradeType == 1) {
-    asset.totalSupply = asset.totalSupply.plus(event.params.tokenAmount);
-    asset.totalTrades = asset.totalTrades.plus(BI_ONE);
-    asset.totalFees = asset.totalFees.plus(fromWei(event.params.creatorFee));
-    asset.totalVolume = asset.totalVolume.plus(fromWei(event.params.ethAmount));
-  } else {
-    asset.totalSupply = asset.totalSupply.minus(event.params.tokenAmount);
-    asset.totalTrades = asset.totalTrades.plus(BI_ONE);
-    asset.totalFees = asset.totalFees.plus(fromWei(event.params.creatorFee));
-    asset.totalVolume = asset.totalVolume.plus(fromWei(event.params.ethAmount));
+    asset.totalSupply = deltaAmount;
+    asset.save();
+    return;
   }
+
+  const creator = getOrCreateUser(Address.fromString(asset.creator!));
+
+  const traderAsset = getOrCreateUserAsset(trader, asset);
+
+  const creatorFee = fromWei(event.params.creatorFee);
+  const ethAmount = fromWei(event.params.ethAmount);
+
+  asset.totalFees = asset.totalFees.plus(creatorFee);
+  asset.totalVolume = asset.totalVolume.plus(ethAmount);
+  asset.totalTrades = asset.totalTrades.plus(BI_ONE);
+
+  creator.creatorProfit = creator.creatorProfit.plus(creatorFee);
+  creator.save();
+
+  if (event.params.tradeType == 1) {
+    // buy
+    asset.totalSupply = asset.totalSupply.plus(deltaAmount);
+    const cost = creatorFee.plus(ethAmount);
+
+    // traderAsset.amount is updated before this handle function (in handleTransfer)
+    // newCost = ((updatedAmount - deltaAmount) * avgPriceBefore + cost)
+    traderAsset.avgPrice = traderAsset.amount
+      .minus(deltaAmount)
+      .times(traderAsset.avgPrice)
+      .plus(cost)
+      .div(traderAsset.amount);
+    traderAsset.save();
+  } else {
+    // sell
+    asset.totalSupply = asset.totalSupply.minus(deltaAmount);
+    const cost = deltaAmount.times(traderAsset.avgPrice);
+    trader.tradingPnl = trader.tradingPnl.plus(
+      ethAmount.minus(creatorFee).minus(cost)
+    );
+    trader.save();
+  }
+
   asset.save();
 }
 
 export function handleTransferBatch(event: TransferBatchEvent): void {
   for (let i = 0; i < event.params.ids.length; i++) {
-    const id = event.params.ids[i].toString();
+    const id = event.params.ids[i];
     const amount = event.params.amounts[i];
     handleTransfer(id, event.params.from, event.params.to, amount);
     newTransferFromBatch(event, i);
@@ -63,7 +105,7 @@ export function handleTransferBatch(event: TransferBatchEvent): void {
 
 export function handleTransferSingle(event: TransferSingleEvent): void {
   handleTransfer(
-    event.params.id.toString(),
+    event.params.id,
     event.params.from,
     event.params.to,
     event.params.amount
@@ -72,28 +114,28 @@ export function handleTransferSingle(event: TransferSingleEvent): void {
 }
 
 function handleTransfer(
-  id: string,
+  id: BigInt,
   from: Address,
   to: Address,
   amount: BigInt
 ): void {
   const asset = getOrCreateAsset(id);
+  const amountBd = fromWei(amount);
 
-  if (from.toHexString() !== ADDRESS_ZERO) {
+  if (from.toHexString() != ADDRESS_ZERO) {
     const fromUser = getOrCreateUser(from);
     const userAsset = getOrCreateUserAsset(fromUser, asset);
-    userAsset.amount = userAsset.amount.minus(amount);
-    if (userAsset.amount.equals(BI_ZERO)) {
-      store.remove("UserAsset", userAsset.id);
-    } else {
-      userAsset.save();
+    userAsset.amount = userAsset.amount.minus(amountBd);
+    if (userAsset.amount.equals(BD_ZERO)) {
+      userAsset.avgPrice = BD_ZERO;
     }
+    userAsset.save();
   }
 
-  if (to.toHexString() !== ADDRESS_ZERO) {
+  if (to.toHexString() != ADDRESS_ZERO) {
     const toUser = getOrCreateUser(to);
     const userAsset = getOrCreateUserAsset(toUser, asset);
-    userAsset.amount = userAsset.amount.plus(amount);
+    userAsset.amount = userAsset.amount.plus(amountBd);
     userAsset.save();
   }
 }
