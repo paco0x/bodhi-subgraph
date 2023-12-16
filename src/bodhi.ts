@@ -72,9 +72,9 @@ export function handleTrade(event: TradeEvent): void {
     // buy
     asset.totalSupply = asset.totalSupply.plus(deltaAmount);
     const cost = creatorFee.plus(ethAmount);
-
     // traderAsset.amount is updated before this handle function (in handleTransfer)
     // newCost = ((updatedAmount - deltaAmount) * avgPriceBefore + cost)
+    // newAvgPrice = newCost / updatedAmount
     traderAsset.avgPrice = traderAsset.amount
       .minus(deltaAmount)
       .times(traderAsset.avgPrice)
