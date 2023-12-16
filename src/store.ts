@@ -15,7 +15,7 @@ import {
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
-import { ADDRESS_ZERO, BD_ZERO, BI_ZERO } from "./number";
+import { ADDRESS_ZERO, BD_ZERO, BI_ZERO, fromWei } from "./number";
 
 export function newCreate(event: CreateEvent): void {
   let create = new Create(
@@ -59,9 +59,17 @@ export function newTrade(event: TradeEvent, user: User): void {
   entity.tradeType = event.params.tradeType;
   entity.assetId = event.params.assetId;
   entity.user = user.id;
-  entity.tokenAmount = event.params.tokenAmount;
-  entity.ethAmount = event.params.ethAmount;
-  entity.creatorFee = event.params.creatorFee;
+  entity.tokenAmount = fromWei(event.params.tokenAmount);
+  entity.ethAmount = fromWei(event.params.ethAmount);
+  entity.creatorFee = fromWei(event.params.creatorFee);
+
+  if (entity.tokenAmount.gt(BD_ZERO)) {
+    entity.price = entity.ethAmount
+      .plus(entity.creatorFee)
+      .div(entity.tokenAmount);
+  } else {
+    entity.price = BD_ZERO;
+  }
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;

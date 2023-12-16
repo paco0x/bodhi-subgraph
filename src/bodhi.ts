@@ -126,9 +126,6 @@ function handleTransfer(
     const fromUser = getOrCreateUser(from);
     const userAsset = getOrCreateUserAsset(fromUser, asset);
     userAsset.amount = userAsset.amount.minus(amountBd);
-    if (userAsset.amount.equals(BD_ZERO)) {
-      userAsset.avgPrice = BD_ZERO;
-    }
     userAsset.save();
   }
 
