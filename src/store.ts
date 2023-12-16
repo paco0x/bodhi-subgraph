@@ -14,12 +14,14 @@ import {
   TransferBatch as TransferBatchEvent,
   TransferSingle as TransferSingleEvent,
 } from "../generated/Bodhi/Bodhi";
-import { Address, BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
 import { ADDRESS_ZERO, BD_ZERO, BI_ZERO } from "./number";
 
 export function newCreate(event: CreateEvent): void {
   let create = new Create(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(event.logIndex.toI32())
   );
   create.assetId = event.params.assetId;
   create.sender = event.params.sender;
@@ -34,7 +36,9 @@ export function newCreate(event: CreateEvent): void {
 
 export function newRemove(event: RemoveEvent): void {
   let entity = new Remove(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(event.logIndex.toI32())
   );
   entity.assetId = event.params.assetId;
   entity.sender = event.params.sender;
@@ -48,7 +52,9 @@ export function newRemove(event: RemoveEvent): void {
 
 export function newTrade(event: TradeEvent): void {
   let entity = new Trade(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(event.logIndex.toI32())
   );
   entity.tradeType = event.params.tradeType;
   entity.assetId = event.params.assetId;
@@ -74,13 +80,16 @@ export function newTransferFromSingle(event: TransferSingleEvent): void {
   }
 
   let entity = new Transfer(
-    event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(0)
+    event.transaction.hash
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(event.logIndex.toI32())
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(0)
   );
   entity.operator = event.params.operator;
   entity.from = event.params.from;
   entity.to = event.params.to;
-
-  entity.Bodhi_id = event.params.id;
+  entity.assetId = event.params.id;
   entity.amount = event.params.amount;
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
@@ -102,13 +111,16 @@ export function newTransferFromBatch(
   }
 
   let entity = new Transfer(
-    event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(0)
+    event.transaction.hash
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(event.logIndex.toI32())
+      .concat(Bytes.fromUTF8("-"))
+      .concatI32(index)
   );
   entity.operator = event.params.operator;
   entity.from = event.params.from;
   entity.to = event.params.to;
-
-  entity.Bodhi_id = event.params.ids[index];
+  entity.assetId = event.params.ids[index];
   entity.amount = event.params.amounts[index];
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
@@ -121,8 +133,9 @@ export function getOrCreateAsset(id: string): Asset {
   let asset = Asset.load(id);
   if (asset == null) {
     asset = new Asset(id);
-    asset.creator = null;
+    asset.assetId = BI_ZERO;
     asset.arTxId = null;
+    asset.creator = null;
     asset.totalSupply = BI_ZERO;
     asset.totalTrades = BI_ZERO;
     asset.totalFees = BD_ZERO;
@@ -144,10 +157,11 @@ export function getOrCreateUser(addr: Address): User {
 }
 
 export function getOrCreateUserAsset(user: User, asset: Asset): UserAsset {
-  const id = user.id.concat(asset.id);
+  const id = user.id.concat("-").concat(asset.id);
   let userAsset = UserAsset.load(id);
   if (userAsset == null) {
     userAsset = new UserAsset(id);
+    userAsset.assetId = asset.assetId;
     userAsset.user = user.id;
     userAsset.asset = asset.id;
     userAsset.amount = BigInt.fromI32(0);

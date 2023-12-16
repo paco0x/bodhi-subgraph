@@ -36,7 +36,7 @@ type Transfer @entity(immutable: true) {
   operator: Bytes! # address
   from: Bytes! # address
   to: Bytes! # address
-  Bodhi_id: BigInt! # uint256
+  assetId: BigInt! # uint256
   amount: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
@@ -51,6 +51,7 @@ type User @entity {
 
 type UserAsset @entity {
   id: ID! # `user.id.concat(asset.id)`
+  assetId: BigInt!
   user: User!
   asset: Asset!
   amount: BigInt!
@@ -58,6 +59,7 @@ type UserAsset @entity {
 
 type Asset @entity {
   id: ID!
+  assetId: BigInt!
   arTxId: String
   creator: User
   totalSupply: BigInt!

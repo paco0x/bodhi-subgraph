@@ -11,20 +11,20 @@ import {
   newCreate,
   newRemove,
   newTrade,
-  // newTransfer,
+  newTransferFromSingle,
+  newTransferFromBatch,
   getOrCreateAsset,
   getOrCreateUser,
   getOrCreateUserAsset,
-  newTransferFromSingle,
-  newTransferFromBatch,
 } from "./store";
 
 export function handleCreate(event: CreateEvent): void {
   newCreate(event);
   getOrCreateUser(event.params.sender);
   const asset = getOrCreateAsset(event.params.assetId.toString());
-  asset.creator = event.params.sender.toHexString();
+  asset.assetId = event.params.assetId;
   asset.arTxId = event.params.arTxId;
+  asset.creator = event.params.sender.toHexString();
   asset.totalSupply = BI_WAD;
   asset.save();
 }
