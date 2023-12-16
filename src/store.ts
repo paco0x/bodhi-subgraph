@@ -148,6 +148,7 @@ export function getOrCreateAsset(id: BigInt): Asset {
     asset.totalTrades = BI_ZERO;
     asset.totalFees = BD_ZERO;
     asset.totalVolume = BD_ZERO;
+    asset.totalHolders = BI_ZERO;
     asset.save();
   }
   return asset;
@@ -161,6 +162,7 @@ export function getOrCreateUser(addr: Address): User {
     user.address = addr;
     user.creatorProfit = BD_ZERO;
     user.tradingPnl = BD_ZERO;
+    user.totalTrades = BI_ZERO;
     user.save();
   }
   return user;

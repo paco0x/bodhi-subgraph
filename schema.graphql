@@ -49,6 +49,7 @@ type User @entity {
   address: Bytes! # address
   creatorProfit: BigDecimal!
   tradingPnl: BigDecimal!
+  totalTrades: BigInt!
   assets: [UserAsset!]! @derivedFrom(field: "user")
   trades: [Trade!]! @derivedFrom(field: "user")
 }
@@ -71,5 +72,6 @@ type Asset @entity {
   totalTrades: BigInt!
   totalFees: BigDecimal!
   totalVolume: BigDecimal!
+  totalHolders: BigInt!
   holders: [UserAsset!]! @derivedFrom(field: "asset")
 }

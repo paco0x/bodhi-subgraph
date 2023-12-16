@@ -48,14 +48,17 @@ export function handleTrade(event: TradeEvent): void {
   const deltaAmount = fromWei(event.params.tokenAmount);
 
   const asset = getOrCreateAsset(event.params.assetId);
+  asset.totalTrades = asset.totalTrades.plus(BI_ONE);
+  trader.totalTrades = trader.totalTrades.plus(BI_ONE);
   if (event.params.tradeType == 0) {
+    // create
     asset.totalSupply = deltaAmount;
     asset.save();
+    trader.save();
     return;
   }
 
   const creator = getOrCreateUser(Address.fromString(asset.creator!));
-
   const traderAsset = getOrCreateUserAsset(trader, asset);
 
   const creatorFee = fromWei(event.params.creatorFee);
@@ -63,7 +66,6 @@ export function handleTrade(event: TradeEvent): void {
 
   asset.totalFees = asset.totalFees.plus(creatorFee);
   asset.totalVolume = asset.totalVolume.plus(ethAmount);
-  asset.totalTrades = asset.totalTrades.plus(BI_ONE);
 
   creator.creatorProfit = creator.creatorProfit.plus(creatorFee);
   creator.save();
@@ -121,18 +123,31 @@ function handleTransfer(
 ): void {
   const asset = getOrCreateAsset(id);
   const amountBd = fromWei(amount);
+  let assetChanged = false;
 
   if (from.toHexString() != ADDRESS_ZERO) {
     const fromUser = getOrCreateUser(from);
     const userAsset = getOrCreateUserAsset(fromUser, asset);
     userAsset.amount = userAsset.amount.minus(amountBd);
+    if (userAsset.amount.equals(BD_ZERO)) {
+      asset.totalHolders = asset.totalHolders.minus(BI_ONE);
+      assetChanged = true;
+    }
     userAsset.save();
   }
 
   if (to.toHexString() != ADDRESS_ZERO) {
     const toUser = getOrCreateUser(to);
     const userAsset = getOrCreateUserAsset(toUser, asset);
+    if (userAsset.amount.equals(BD_ZERO) && amountBd.gt(BD_ZERO)) {
+      asset.totalHolders = asset.totalHolders.plus(BI_ONE);
+      assetChanged = true;
+    }
     userAsset.amount = userAsset.amount.plus(amountBd);
     userAsset.save();
+  }
+
+  if (assetChanged) {
+    asset.save();
   }
 }
